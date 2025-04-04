@@ -8,18 +8,21 @@ body {
 /* Style the form */
 form {
     display: inline-block;
-    padding: 20px;
+    padding: 25px;
     border: 1px solid #ccc;
     border-radius: 10px;
     background: #f9f9f9;
+    width: 350px; /* Define uma largura fixa para o formulário */
+    box-sizing: border-box; /* Inclui padding e borda no tamanho total */
 }
 
-/* Adjust inputs and buttons to occupy full form width */
+/* Ajustar inputs e botões para ocupar uma largura menor */
 input, button {
     display: block;
-    width: 100%;
-    margin-top: 10px;
+    width: 90%; /* Reduz a largura para 90% do formulário */
+    margin: 10px auto; /* Centraliza o input e o botão */
     padding: 10px;
+    box-sizing: border-box; /* Inclui padding e borda no tamanho total */
 }
 
 /* Style the status area */
@@ -27,16 +30,52 @@ input, button {
     font-weight: bold;
     padding: 10px;
     border-radius: 5px;
+    display: flex;
+    align-items: center; /* Alinha o texto e o spinner verticalmente */
+    justify-content: center; /* Centraliza o conteúdo */
 }
 
 /* Style for positive status (number has WhatsApp) */
 .green {
-    background-color: lightgreen;
-    color: green;
+    background-color: #25D366;
+    color: white;
 }
 
 /* Style for negative status (number does not have WhatsApp) */
 .red {
     background-color: pink;
     color: red;
+}
+
+/* Spinner para feedback visual */
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #25D366;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    animation: spin 1s linear infinite;
+    display: none; /* Oculto por padrão */
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+/* Animação de rotação */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Exibir spinner apenas quando "loading" estiver ativo */
+.loading .spinner {
+    display: inline-block;
+}
+
+/* Estilo para o texto "Verificando..." */
+.loading .status-text {
+    color: black;
 }
