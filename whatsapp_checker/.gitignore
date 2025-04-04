@@ -1,0 +1,32 @@
+# Ignorar arquivos de ambiente (dados sensíveis)
+*.env
+
+# Ignorar dependências do Node.js
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignorar cache do sistema e arquivos do editor
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos temporários e backups
+*.swp
+*.tmp
+*.bak
+
+# Ignorar pastas de build (se usar futuramente)
+dist/
+build/
+
+# Ignorar arquivos do sistema operacional
+ehthumbs.db
+Icon?
+desktop.ini
+
+# VSCode configs locais
+.vscode/

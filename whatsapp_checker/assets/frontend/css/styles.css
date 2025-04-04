@@ -1,0 +1,42 @@
+/* Set font and center content */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin-top: 50px;
+}
+
+/* Style the form */
+form {
+    display: inline-block;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #f9f9f9;
+}
+
+/* Adjust inputs and buttons to occupy full form width */
+input, button {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+/* Style the status area */
+#whatsapp-status {
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Style for positive status (number has WhatsApp) */
+.green {
+    background-color: lightgreen;
+    color: green;
+}
+
+/* Style for negative status (number does not have WhatsApp) */
+.red {
+    background-color: pink;
+    color: red;
+}

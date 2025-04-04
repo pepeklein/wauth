@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de WhatsApp</title>
+    <!-- Import CSS file -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <h2>Verificação de WhatsApp</h2>
+
+    <!-- Phone number input form -->
+    <form id="whatsapp-form">
+        <label for="phone">Número de Telefone:</label>
+        <input type="text" id="phone" name="phone" placeholder="Digite o número com DDD" required>
+        <input type="hidden" id="country" name="country" value="BR" required>
+        <button type="submit">Verificar</button>
+        <!-- Status display area -->
+        <div id="whatsapp-status">Aguardando verificação...</div>
+    </form>
+
+    <!-- Import JavaScript file -->
+    <script src="js/script.js"></script>
+
+</body>
+</html>
