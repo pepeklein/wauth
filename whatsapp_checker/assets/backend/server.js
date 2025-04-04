@@ -15,10 +15,27 @@ const API_KEY = process.env.API_KEY;
 console.log('Endpoint:', ENDPOINT);
 console.log('API Key:', API_KEY);
 
+// Função para normalizar o número de telefone
+function normalizePhoneNumber(number) {
+    // Remove espaços, parênteses, traços e outros caracteres não numéricos
+    let cleanedNumber = number.replace(/[\s()-]/g, '');
+
+    // Remove o código do país se o número começar com "+"
+    if (cleanedNumber.startsWith('+')) {
+        cleanedNumber = cleanedNumber.replace(/^\+\d{1,3}/, '');
+    }
+
+    return cleanedNumber;
+}
+
 app.post('/whatsapp_checker', async (req, res) => {
     console.log('Dados recebidos:', req.body); // Verificar os dados recebidos
 
     const { number, country } = req.body;
+
+    // Normalizar o número de telefone
+    number = normalizePhoneNumber(number);
+    console.log('Número normalizado:', number);
 
     try {
         const response = await fetch(ENDPOINT, {
