@@ -1,4 +1,4 @@
-<h1 align="center"> WhatsApp Checker </h1>
+<h1 align="center"> WAuth </h1>
 
 ## About the project
 A versatile solution to verify if a phone number is registered on WhatsApp. Using the eKYCPro API, this feature can be easily integrated into any application, website, form, or system that requires phone number verification. The form shown here is an example of its usage.
