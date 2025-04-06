@@ -31,7 +31,7 @@ function normalizePhoneNumber(number) {
 app.post('/whatsapp_checker', async (req, res) => {
     console.log('Dados recebidos:', req.body); // Verificar os dados recebidos
 
-    const { number, country } = req.body;
+    let { number, country } = req.body; // Alterado de const para let
 
     // Normalizar o número de telefone
     number = normalizePhoneNumber(number);
@@ -51,12 +51,10 @@ app.post('/whatsapp_checker', async (req, res) => {
             body: new URLSearchParams({ number, country })
         });
 
-        console.log('Resposta da API externa:', response);
-
         const text = await response.text();
         console.log('Resposta como texto:', text);
 
-        const data = JSON.parse(text);
+        const data = text ? JSON.parse(text) : {};
         res.json(data);
     } catch (error) {
         console.error('Erro na requisição:', error);
