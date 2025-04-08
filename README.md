@@ -7,7 +7,7 @@ A versatile solution to verify if a phone number is registered on WhatsApp. Usin
 Real time WhatsApp validation
 
 ## Demonstration
-![Demo](https://github.com/user-attachments/assets/8fd22cdb-fc4e-42ef-922d-ee83d493291c)
+![Demo](https://github.com/user-attachments/assets/1c7dba8b-130a-4d31-8ca3-95db6b5d8918)
 
 ## WorkFlow  
 ![workflow](https://github.com/user-attachments/assets/29faa949-be50-44f6-a230-a6afbb8a8b20)
