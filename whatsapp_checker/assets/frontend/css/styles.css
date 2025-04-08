@@ -5,26 +5,26 @@ body {
     margin-top: 50px;
 }
 
-/* Definir largura fixa para o formulário */
+/* Style the form container */
 form {
     display: inline-block;
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 10px;
     background: #f9f9f9;
-    width: 300px; /* Largura fixa */
-    box-sizing: border-box; /* Inclui padding e borda na largura total */
+    width: 300px; /* Fixed width */
+    box-sizing: border-box; /* Include padding and border in total width */
 }
 
-/* Ajustar o tamanho do campo de entrada */
+/* Style the phone input field */
 #phone {
-    width: 100%; /* Reduzido para caber no formulário */
-    box-sizing: border-box; /* Garante que padding e borda não aumentem o tamanho */
-    margin: 0 auto; /* Centraliza o input */
+    width: 100%; /* Full width */
+    box-sizing: border-box; /* Include padding and border */
+    margin: 0 auto;
     margin-top: 10px;
 }
 
-/* Adjust inputs and buttons to occupy full form width */
+/* Style inputs and buttons */
 input, button {
     display: block;
     width: 100%;
@@ -32,11 +32,12 @@ input, button {
     padding: 10px;
 }
 
+/* Style the status display */
 #whatsapp-status {
     font-weight: bold;
     padding: 10px;
     border-radius: 5px;
-    margin-top: 10px; /* Adicionado para aumentar o espaço */
+    margin-top: 10px;
 }
 
 /* Style for positive status (number has WhatsApp) */
@@ -51,6 +52,7 @@ input, button {
     color: red;
 }
 
+/* Spinner animation */
 .spinner {
     border: 4px solid #f3f3f3; /* Light gray */
     border-top: 4px solid #25D366; /* Green */
@@ -58,11 +60,12 @@ input, button {
     width: 10px;
     height: 10px;
     animation: spin 1s linear infinite;
-    display: none; /* Oculto por padrão */
-    margin-right: 10px; /* Espaço entre o spinner e o texto */
+    display: none; /* Hidden by default */
+    margin-right: 10px;
     vertical-align: middle;
 }
 
+/* Show spinner when loading */
 #whatsapp-status.loading .spinner {
     display: inline-block;
 }
