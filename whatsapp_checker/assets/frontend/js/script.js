@@ -1,3 +1,6 @@
+// Cache to store previously checked numbers
+const cache = {};
+
 // Add event listener to the form submission
 document.getElementById('whatsapp-form').addEventListener('submit', async function(event) {
     event.preventDefault();
@@ -18,6 +21,20 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
         return;
     }
 
+    // Check the number is already stored in the cache
+    const cacheKey = `${country}-${phone}`;
+    if (cache[cacheKey]) {
+        console.log('Resposta do cache:', cache[cacheKey]);
+        const cachedResponse = cache[cacheKey];
+        updateStatus(
+            statusDiv,
+            statusText,
+            cachedResponse.whatsapp === 'yes' ? MESSAGES.hasWhatsApp : MESSAGES.noWhatsApp,
+            cachedResponse.whatsapp === 'yes' ? 'green' : 'red'
+        );
+        return;
+    }
+
     // Show loading state
     setLoadingState(statusDiv, spinner, statusText);
 
@@ -31,6 +48,8 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
 
         const data = await response.json();
         console.log('Resposta da API:', data);
+
+        cache[cacheKey] = data.message;
 
         // Update status based on the API response
         if (data.message && data.message.whatsapp === 'yes') {
