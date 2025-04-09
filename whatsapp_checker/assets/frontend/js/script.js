@@ -38,6 +38,7 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
             cachedResponse.whatsapp === 'yes' ? MESSAGES.hasWhatsApp : MESSAGES.noWhatsApp,
             cachedResponse.whatsapp === 'yes' ? 'green' : 'red'
         );
+        isSubmitting = false; // Allow new submissions
         return;
     }
 
@@ -45,6 +46,7 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
     setLoadingState(statusDiv, spinner, statusText);
 
     try {
+        const nonce = Date.now().toString() + crypto.randomBytes(16).toString('hex');
         // Send the request to the backend
         const response = await fetch('https://localhost:5500/whatsapp_checker', {
             method: 'POST',
@@ -52,13 +54,20 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
                 'Content-Type': 'application/x-www-form-urlencoded',
                 // 'Authorization': `Bearer TOKEN_JWT` // Substitute with actual token if needed
             },
-            body: new URLSearchParams({ number: phone, country })
+            body: new URLSearchParams({ number: phone, country, nonce }),
         });
 
         const data = await response.json();
         console.log('Resposta da API:', data);
 
-        cache[cacheKey] = data.message;
+        // Response structure validation before storing it in the cache
+        if (data.message && typeof data.message.whatsapp === 'string') {
+            cache[cacheKey] = data.message;
+        } else {
+            console.error('Resposta inesperada da API:', data);
+            updateStatus(statusDiv, statusText, MESSAGES.unexpectedError, 'red');
+            return;
+        }
 
         // Update status based on the API response
         if (data.message && data.message.whatsapp === 'yes') {
@@ -148,7 +157,7 @@ const MESSAGES = {
     verifying: 'Verificando...',
     hasWhatsApp: 'O número está registrado no WhatsApp.',
     noWhatsApp: 'O número não está registrado no WhatsApp.',
-    invalidNumber: 'Formato de número inválido.',
+    invalidNumber: 'Formato de número inválido. Digite apenas o DDD e o número.',
     networkError: 'Erro de rede. Verifique sua conexão.',
     unexpectedError: 'Erro inesperado.',
 };
