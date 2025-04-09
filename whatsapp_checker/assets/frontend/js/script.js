@@ -1,9 +1,15 @@
 // Cache to store previously checked numbers
 const cache = {};
 
+// Prevent multiple submissions
+let isSubmitting = false;
+
 // Add event listener to the form submission
 document.getElementById('whatsapp-form').addEventListener('submit', async function(event) {
     event.preventDefault();
+
+    if (isSubmitting) return; // Block multiple submissions
+    isSubmitting = true;
 
     // Get input values
     const phone = document.getElementById('phone').value;
@@ -40,9 +46,12 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
 
     try {
         // Send the request to the backend
-        const response = await fetch('http://localhost:5500/whatsapp_checker', {
+        const response = await fetch('https://localhost:5500/whatsapp_checker', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                // 'Authorization': `Bearer TOKEN_JWT` // Substitute with actual token if needed
+            },
             body: new URLSearchParams({ number: phone, country })
         });
 
@@ -65,8 +74,8 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
             updateStatus(statusDiv, statusText, MESSAGES.unexpectedError, 'red');
         }
     } finally {
-        // Remove loading state
-        removeLoadingState(statusDiv, spinner);
+        removeLoadingState(statusDiv, spinner); // Remove loading state
+        isSubmitting = false; // Allow new submissions
     }
 });
 
@@ -86,8 +95,8 @@ function resetStatus(statusDiv, statusText) {
  * @returns {boolean} - True if the phone number is valid, false otherwise.
  */
 function isValidPhoneNumber(phone) {
-    const phoneRegex = /^[0-9]{10,15}$/; // Example: 10-15 digits
-    return phoneRegex.test(phone);
+    const phoneRegex = /^[0-9]{10,15}$/; // 10-15 digits
+    return phoneRegex.test(phone) && !phone.startsWith('0'); // Don't allow leading zeros
 }
 
 /**
@@ -109,10 +118,16 @@ function setLoadingState(statusDiv, spinner, statusText) {
  * @param {string} message - The message to display.
  * @param {string} colorClass - The color class to apply (e.g., 'green', 'red').
  */
+function sanitizeHTML(str) {
+    const tempDiv = document.createElement('div');
+    tempDiv.textContent = str;
+    return tempDiv.innerHTML;
+}
+
 function updateStatus(statusDiv, statusText, message, colorClass) {
     statusDiv.classList.remove('green', 'red', 'loading'); // Remove specific classes
     statusDiv.classList.add(colorClass); // Apply color class
-    statusText.textContent = message;
+    statusText.innerHTML = sanitizeHTML(message); // Use mensagem sanitizada
 }
 
 /**
