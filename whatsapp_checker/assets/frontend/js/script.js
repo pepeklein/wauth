@@ -46,8 +46,7 @@ document.getElementById('whatsapp-form').addEventListener('submit', async functi
     setLoadingState(statusDiv, spinner, statusText);
 
     try {
-        const nonce = Date.now().toString() + Math.random().toString(36).substring(2);
-        
+        const nonce = Date.now().toString() + crypto.randomBytes(16).toString('hex');
         // Send the request to the backend
         const response = await fetch('https://localhost:5500/whatsapp_checker', {
             method: 'POST',
