@@ -4,7 +4,6 @@ import cors from 'cors';
 import fetch from 'node-fetch';
 import validator from 'validator';
 import rateLimit from 'express-rate-limit';
-// import jwt from 'jsonwebtoken';
 import https from 'https';
 
 dotenv.config();
@@ -13,11 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10kb' }));
-
-/* Generate a JWT token for testing purposes
-const token = jwt.sign({ user: 'exampleUser' }, process.env.JWT_SECRET, { expiresIn: '1h' });
-console.log('Token JWT gerado para testes:', token);
-*/
 
 console.log('SSL_KEY:', process.env.SSL_KEY.slice(0, 27));
 console.log('SSL_CERT:', process.env.SSL_CERT.slice(0, 27));
@@ -44,6 +38,7 @@ console.log('API Key:', API_KEY.slice(0, 4) + '...');
 
 /**
  * Normalizes a phone number by removing unnecessary characters.
+ * Removes spaces, parentheses, and dashes, and strips the country code if present.
  * @param {string} number - The phone number entered by the user.
  * @returns {string} - The normalized phone number containing only digits.
  */
@@ -57,6 +52,7 @@ function normalizePhoneNumber(number) {
 
 /**
  * Validates the phone number format.
+ * Ensures the phone number contains only digits and has a length between 10 and 15.
  * @param {string} number - The phone number to validate.
  * @returns {boolean} - True if the phone number is valid, false otherwise.
  */
@@ -73,28 +69,12 @@ app.post('/whatsapp_checker', async (req, res) => {
     let { number, country } = req.body;
     const { nonce } = req.body;
 
-    /*
-    // Verify JWT token
-    try {
-        const token = req.headers.authorization?.split(' ')[1]; // Extrair o token do cabeçalho Authorization
-        if (!token) {
-            return res.status(401).json({ error: 'Token não fornecido.' });
-        }
-
-        // Validate JWT token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('Usuário autenticado:', decoded);
-    } catch (error) {
-        return res.status(403).json({ error: 'Token inválido.' });
-    }
-    */
-
     if (nonces.has(nonce)) {
         return res.status(400).json({ error: 'Requisição duplicada detectada.' });
     }
 
     nonces.add(nonce);
-    setTimeout(() => nonces.delete(nonce), 300000); // Remove o nonce após 5 minutos
+    setTimeout(() => nonces.delete(nonce), 300000); // Remove the nonce after 5 minutes
 
     // Sanitize inputs
     number = validator.trim(number);
@@ -133,13 +113,15 @@ app.post('/whatsapp_checker', async (req, res) => {
         const data = text ? JSON.parse(text) : {};
         res.json(data);
     } catch (error) {
-        console.error('Request error:', error);
+        console.error('Erro na requisição:', error);
 
         // Handle different types of errors
-        if (error.name === 'FetchError') {
-            res.status(502).json({ error: 'Falha ao conectar com a API' });
+        if (error.name === 'TypeError') {
+            return res.status(500).json({ error: 'Erro de rede. Verifique sua conexão.' });
+        } else if (error.response && error.response.error) {
+            return res.status(500).json({ error: error.response.error });
         } else {
-            res.status(500).json({ error: 'Um erro inesperado aconteceu' });
+            return res.status(500).json({ error: 'Erro inesperado no servidor.' });
         }
     }
 });
