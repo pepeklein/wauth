@@ -19,8 +19,8 @@ const token = jwt.sign({ user: 'exampleUser' }, process.env.JWT_SECRET, { expire
 console.log('Token JWT gerado para testes:', token);
 */
 
-console.log('SSL_KEY:', process.env.SSL_KEY.slice(0, 30) + '...');
-console.log('SSL_CERT:', process.env.SSL_CERT.slice(0, 30) + '...');
+console.log('SSL_KEY:', process.env.SSL_KEY.slice(0, 27));
+console.log('SSL_CERT:', process.env.SSL_CERT.slice(0, 27));
 
 if (process.env.NODE_ENV !== 'production') {
     console.log('Servidor iniciado.');
@@ -39,8 +39,8 @@ app.use(limiter);
 const ENDPOINT = process.env.ENDPOINT;
 const API_KEY = process.env.API_KEY;
 
-console.log('Endpoint:', ENDPOINT);
-console.log('API Key:', API_KEY);
+console.log('Endpoint:', ENDPOINT.slice(0, 10) + '...');
+console.log('API Key:', API_KEY.slice(0, 4) + '...');
 
 /**
  * Normalizes a phone number by removing unnecessary characters.
@@ -124,6 +124,10 @@ app.post('/whatsapp_checker', async (req, res) => {
             },
             body: new URLSearchParams({ number, country }),
         });
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: `Erro na API externa: ${response.statusText}` });
+        }
 
         const text = await response.text();
         const data = text ? JSON.parse(text) : {};
