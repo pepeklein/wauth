@@ -148,6 +148,7 @@ app.get('/', (req, res) => {
     res.send('Servidor funcionando! Use o endpoint /whatsapp_checker para enviar requisições.');
 });
 
+/*
 // Configure HTTPS server
 const httpsOptions = {
     key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
@@ -158,4 +159,11 @@ const httpsOptions = {
 const server = https.createServer(httpsOptions, app);
 server.listen(process.env.PORT || 5500, () => {
     console.log(`Servidor rodando em https://localhost:${process.env.PORT || 5500}`);
+});
+*/
+
+// Azure App Service configuration
+const PORT = process.env.PORT;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
