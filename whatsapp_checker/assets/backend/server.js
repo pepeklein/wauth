@@ -1,46 +1,42 @@
+// Import required modules
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import validator from 'validator';
 import rateLimit from 'express-rate-limit';
-// import jwt from 'jsonwebtoken';
-import https from 'https';
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+app.use(cors({
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'X-API-Key'],
+}));
+
+// Middleware for parsing requests
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10kb' }));
 
-/* Generate a JWT token for testing purposes
-const token = jwt.sign({ user: 'exampleUser' }, process.env.JWT_SECRET, { expiresIn: '1h' });
-console.log('Token JWT gerado para testes:', token);
-*/
-
-console.log('SSL_KEY:', process.env.SSL_KEY.slice(0, 27));
-console.log('SSL_CERT:', process.env.SSL_CERT.slice(0, 27));
-
-if (process.env.NODE_ENV !== 'production') {
-    console.log('Servidor iniciado.');
-}
-
-// Middleware to limit the number of requests to prevent abuse and ensure fair usage of the API
+// Rate limiter to prevent abuse
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 30, // Limit each IP to 30 requests per windowMs
-    message: { error: 'Muitas tentativas. Tente novamente mais tarde.' }
+    max: 30, // Limit each IP to 30 requests per window
+    message: { error: 'Too many requests. Please try again later.' },
 });
 
 app.use(limiter);
 
-// Load API endpoint and key from .env file
+// Load API endpoint and key from environment variables
 const ENDPOINT = process.env.ENDPOINT;
 const API_KEY = process.env.API_KEY;
 
-console.log('Endpoint:', ENDPOINT.slice(0, 10) + '...');
-console.log('API Key:', API_KEY.slice(0, 4) + '...');
+// Map to store nonces and their statuses
+const nonces = new Map();
 
 /**
  * Normalizes a phone number by removing unnecessary characters.
@@ -61,40 +57,32 @@ function normalizePhoneNumber(number) {
  * @returns {boolean} - True if the phone number is valid, false otherwise.
  */
 function isValidPhoneNumber(number) {
-    const phoneRegex = /^[0-9]{10,15}$/; // Example: 10-15 digits
+    const phoneRegex = /^[0-9]{10,15}$/; // 10-15 digits
     return phoneRegex.test(number);
 }
 
-// Set to store nonces to prevent duplicate requests
-const nonces = new Set();
-
-// API endpoint to check if a phone number is registered on WhatsApp
+// Endpoint to check WhatsApp status
 app.post('/whatsapp_checker', async (req, res) => {
     let { number, country } = req.body;
     const { nonce } = req.body;
 
-    /*
-    // Verify JWT token
-    try {
-        const token = req.headers.authorization?.split(' ')[1]; // Extrair o token do cabeçalho Authorization
-        if (!token) {
-            return res.status(401).json({ error: 'Token não fornecido.' });
-        }
-
-        // Validate JWT token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('Usuário autenticado:', decoded);
-    } catch (error) {
-        return res.status(403).json({ error: 'Token inválido.' });
-    }
-    */
-
-    if (nonces.has(nonce)) {
-        return res.status(400).json({ error: 'Requisição duplicada detectada.' });
+    // Check if nonce already exists
+    if (!nonces.has(nonce)) {
+        nonces.set(nonce, { status: 'checking', attempts: 0 });
     }
 
-    nonces.add(nonce);
-    setTimeout(() => nonces.delete(nonce), 300000); // Remove o nonce após 5 minutos
+    const nonceData = nonces.get(nonce);
+
+    // Increment the number of attempts
+    nonceData.attempts += 1;
+
+    // Reject if attempts exceed 3 and status is still "checking"
+    if (nonceData.attempts > 3 && nonceData.status === 'checking') {
+        return res.status(400).json({ error: 'Maximum attempts exceeded.' });
+    }
+
+    // Update the nonce status
+    nonces.set(nonce, { ...nonceData, status: 'checking' });
 
     // Sanitize inputs
     number = validator.trim(number);
@@ -102,23 +90,18 @@ app.post('/whatsapp_checker', async (req, res) => {
 
     // Normalize the phone number
     number = normalizePhoneNumber(number);
-    console.log('Normalized number:', number);
-    console.log('Country:', country);
 
     // Validate the phone number
     if (!isValidPhoneNumber(number)) {
-        return res.status(400).json({ error: 'Formato de número inválido.' });
+        return res.status(400).json({ error: 'Invalid phone number format.' });
     }
 
     try {
-        // Send the request to the external API
+        console.log(`Attempt ${nonceData.attempts}: Sending request to external API...`);
+
         const response = await fetch(ENDPOINT, {
             method: 'POST',
             headers: {
-                'User-Agent': 'PostmanRuntime/7.43.3',
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive',
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-API-Key': API_KEY,
             },
@@ -126,44 +109,31 @@ app.post('/whatsapp_checker', async (req, res) => {
         });
 
         if (!response.ok) {
-            return res.status(response.status).json({ error: `Erro na API externa: ${response.statusText}` });
+            console.error('Request error:', response.statusText);
+            return res.status(response.status).json({ error: `External API error: ${response.statusText}` });
         }
 
-        const text = await response.text();
-        const data = text ? JSON.parse(text) : {};
-        res.json(data);
+        const data = await response.json();
+
+        // Update the nonce status
+        if (data.message && data.message.whatsapp !== 'checking') {
+            nonces.set(nonce, { ...nonceData, status: data.message.whatsapp });
+        }
+
+        return res.json(data);
     } catch (error) {
-        console.error('Request error:', error);
-
-        // Handle different types of errors
-        if (error.name === 'FetchError') {
-            res.status(502).json({ error: 'Falha ao conectar com a API' });
-        } else {
-            res.status(500).json({ error: 'Um erro inesperado aconteceu' });
-        }
+        console.error('Backend error:', error);
+        res.status(500).json({ error: 'An unexpected error occurred.' });
     }
 });
 
+// Root endpoint
 app.get('/', (req, res) => {
-    res.send('Servidor funcionando! Use o endpoint /whatsapp_checker para enviar requisições.');
+    res.send('Server is running! Use the /whatsapp_checker endpoint to send requests.');
 });
 
-/*
-// Configure HTTPS server
-const httpsOptions = {
-    key: process.env.SSL_KEY.replace(/\\n/g, '\n'),
-    cert: process.env.SSL_CERT.replace(/\\n/g, '\n')
-};
-
-// Start the HTTPS server
-const server = https.createServer(httpsOptions, app);
-server.listen(process.env.PORT || 5500, () => {
-    console.log(`Servidor rodando em https://localhost:${process.env.PORT || 5500}`);
-});
-*/
-
-// Azure App Service configuration
-const PORT = process.env.PORT;
+// Start the server
+const PORT = process.env.PORT || 5500;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });

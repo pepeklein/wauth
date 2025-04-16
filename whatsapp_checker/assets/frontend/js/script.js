@@ -4,89 +4,86 @@ const cache = {};
 // Prevent multiple submissions
 let isSubmitting = false;
 
-// Add event listener to the form submission
-document.getElementById('whatsapp-form').addEventListener('submit', async function(event) {
+/**
+ * Makes a request to the API and checks the status until a definitive response is received.
+ * @param {string} phone - The phone number.
+ * @param {string} country - The country code.
+ * @param {string} nonce - A unique identifier for the request.
+ * @returns {Promise<Object>} - The API response object.
+ */
+async function fetchWhatsAppStatus(phone, country, nonce) {
+    const MAX_RETRIES = 3; // Maximum number of attempts
+    const RETRY_DELAY = 3000; // Delay between attempts (in ms)
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const response = await fetch('http://127.0.0.1:5500/whatsapp_checker', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ number: phone, country, nonce }),
+            });
+
+            const data = await response.json();
+            console.log(`Attempt ${attempt + 1}:`, data);
+
+            if (data.message && data.message.whatsapp !== 'checking') {
+                return data; // Return the definitive response
+            }
+        } catch (error) {
+            console.error(`Error on attempt ${attempt + 1}:`, error);
+        }
+
+        // Wait before retrying
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+    }
+
+    throw new Error('The process took longer than expected. Please try again.');
+}
+
+document.getElementById('whatsapp-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    if (isSubmitting) return; // Block multiple submissions
+    if (isSubmitting) return; // Prevent multiple submissions
     isSubmitting = true;
 
-    // Get input values
-    const phone = document.getElementById('phone').value;
-    const country = document.getElementById('country').value;
+    const phone = document.getElementById('phone').value.trim();
+    const country = document.getElementById('country').value.trim();
     const statusDiv = document.getElementById('whatsapp-status');
     const spinner = statusDiv.querySelector('.spinner');
     const statusText = statusDiv.querySelector('.status-text');
 
-    // Reset default status
     resetStatus(statusDiv, statusText);
 
-    // Validate phone number before sending the request
     if (!isValidPhoneNumber(phone)) {
         updateStatus(statusDiv, statusText, MESSAGES.invalidNumber, 'red');
+        isSubmitting = false;
         return;
     }
 
-    // Check the number is already stored in the cache
-    const cacheKey = `${country}-${phone}`;
-    if (cache[cacheKey]) {
-        console.log('Resposta do cache:', cache[cacheKey]);
-        const cachedResponse = cache[cacheKey];
-        updateStatus(
-            statusDiv,
-            statusText,
-            cachedResponse.whatsapp === 'yes' ? MESSAGES.hasWhatsApp : MESSAGES.noWhatsApp,
-            cachedResponse.whatsapp === 'yes' ? 'green' : 'red'
-        );
-        isSubmitting = false; // Allow new submissions
-        return;
-    }
-
-    // Show loading state
     setLoadingState(statusDiv, spinner, statusText);
 
     try {
         const nonce = Date.now().toString() + Array.from(crypto.getRandomValues(new Uint8Array(16)))
             .map((b) => b.toString(16).padStart(2, '0'))
             .join('');
-        // Send the request to the backend
-        const response = await fetch('https://localhost:5500/whatsapp_checker', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                // 'Authorization': `Bearer TOKEN_JWT` // Substitute with actual token if needed
-            },
-            body: new URLSearchParams({ number: phone, country, nonce }),
-        });
 
-        const data = await response.json();
-        console.log('Resposta da API:', data);
+        const data = await fetchWhatsAppStatus(phone, country, nonce);
 
-        // Response structure validation before storing it in the cache
-        if (data.message && typeof data.message.whatsapp === 'string') {
-            cache[cacheKey] = data.message;
-        } else {
-            console.error('Resposta inesperada da API:', data);
-            updateStatus(statusDiv, statusText, MESSAGES.unexpectedError, 'red');
-            return;
-        }
-
-        // Update status based on the API response
         if (data.message && data.message.whatsapp === 'yes') {
             updateStatus(statusDiv, statusText, MESSAGES.hasWhatsApp, 'green');
-        } else {
+        } else if (data.message && data.message.whatsapp === 'no') {
             updateStatus(statusDiv, statusText, MESSAGES.noWhatsApp, 'red');
-        }
-    } catch (error) {
-        console.error('Erro na requisição:', error);
-        if (error.name === 'TypeError') {
-            updateStatus(statusDiv, statusText, MESSAGES.networkError, 'red');
         } else {
             updateStatus(statusDiv, statusText, MESSAGES.unexpectedError, 'red');
         }
+    } catch (error) {
+        console.error('Request error:', error);
+        updateStatus(statusDiv, statusText, error.message, 'red');
     } finally {
-        removeLoadingState(statusDiv, spinner); // Remove loading state
-        isSubmitting = false; // Allow new submissions
+        removeLoadingState(statusDiv, spinner);
+        isSubmitting = false;
     }
 });
 
@@ -138,7 +135,7 @@ function sanitizeHTML(str) {
 function updateStatus(statusDiv, statusText, message, colorClass) {
     statusDiv.classList.remove('green', 'red', 'loading'); // Remove specific classes
     statusDiv.classList.add(colorClass); // Apply color class
-    statusText.innerHTML = sanitizeHTML(message); // Use mensagem sanitizada
+    statusText.innerHTML = sanitizeHTML(message); // Use sanitized message
 }
 
 /**
@@ -155,11 +152,11 @@ function removeLoadingState(statusDiv, spinner) {
  * Constants for fixed messages used in the application.
  */
 const MESSAGES = {
-    awaitingVerification: 'Aguardando verificação...',
-    verifying: 'Verificando...',
-    hasWhatsApp: 'O número está registrado no WhatsApp.',
-    noWhatsApp: 'O número não está registrado no WhatsApp.',
-    invalidNumber: 'Formato de número inválido. Digite apenas o DDD e o número.',
-    networkError: 'Erro de rede. Verifique sua conexão.',
-    unexpectedError: 'Erro inesperado.',
+    awaitingVerification: 'Awaiting verification...',
+    verifying: 'Verifying...',
+    hasWhatsApp: 'The number is registered on WhatsApp.',
+    noWhatsApp: 'The number is not registered on WhatsApp.',
+    invalidNumber: 'Invalid phone number format. Enter only the area code and number.',
+    networkError: 'Network error. Check your connection.',
+    unexpectedError: 'Unexpected error.',
 };
